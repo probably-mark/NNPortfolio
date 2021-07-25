@@ -1,0 +1,13 @@
+Package: NNPortfolio
+Type: Package
+Title: A neural network for ESG portfolio construction: A Tutorial
+Version: 0.1.0
+Author@R: c(
+    person("Mark", "McAvoy", role = c("aut", "cre"), email = "mcavoy@brandeis.edu"))
+    person("Matthew", "McAvoy", role = c("ctb")),
+    person("Lingyi", "Kong", role = c("ctb")),
+Description: A walk through of an example of portfolio construction with stock returns following 
+    "A neural network for ESG portfolio construction" by Kong, McAvoy, and McAvoy
+    As well, an introduction to neural networks by making a comparison to linear regression
+License: GPL-2
+Encoding: UTF-8
