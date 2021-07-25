@@ -6,15 +6,6 @@ This package contains code for reproducing the NN-Top-30 portfolio in "A neural 
 
 The tutorial that we will follow in this document can be found in `R/Tutorial.Rmd` and the script and functions for reproducing the portfolio at `R/NN_Portfolio.R`.
 
-## 
-
-This GitHub website hosts the source code. The package may be downloaded using:
-
-```
-library(devtools)
-devtools::install_github("mk24934/NNPortfolio")
-```
-
 ## Authors
 
 Lingyi Kong, City University of New York, Baruch College, Zicklin School of Business, New York, NY.
