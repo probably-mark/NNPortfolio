@@ -1,0 +1,282 @@
+---
+title: "A neural network for ESG portfolio construction: A Tutorial"
+author: "Mark McAvoy"
+date: "2021-07-24"
+output: html_document
+---
+
+In this tutorial we will cover two things. First, we will look at a how neural network estimates parameters by considering a one layer one node network that mirros a linear regression. Second, we will walk through an example of portfolio construction with stock returns following "A neural network for ESG portfolio construction" by Kong, McAvoy, and McAvoy.
+
+## Package Dependencies
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(keras)
+library(tfdatasets)
+tensorflow::tf_config()
+
+portfolio_size = 3; gamma = 2; validation_percent = 0; epochs = 5;
+set.seed(1)
+
+source('NN_Portfolio.R')
+
+```
+
+```{r, eval = FALSE}
+library(tidyverse)
+library(keras)
+library(tfdatasets)
+tensorflow::tf_config()
+
+set.seed(1)
+```
+
+## Linear regression with a neural network
+
+Before we make our portfolio network let's look at the building blocks by making a neural network with one layer and one input. In this way, we will estimate the same values that OLS will estimate in the following regression.
+
+$$
+y = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + \varepsilon
+$$
+
+We are using keras functions `layer_input`, `layer_dense`, and `keras_model`.
+
+The following three lines set up this model. Let's go through what each of these mean.
+
+- `layer_input`: Initializes the neural network, telling it how many sets of data to expect. Since we set the shape to 2, it will expect a matrix with two variables. 
+- `layer_dense`: Same as a generalized linear regression. This takes each variable from the previous layer, multiplies them by a coefficient, adds these together and adds an intercept (also called a bias). `input` tells this layer which layer is the preceeding layer. `units` is the number of nodes in this layer. `name` is what this layer will be called in the model object. `kernel_initializer` specifies the starting values of the multiplying coefficients. Normally these values are randomly set. We fix these to start at 1 for reproducibility.
+- `keras_model`: Collects the layers together into a model object. The first argument is the input layer, the second argument is the final layer.
+
+In the model output below we see the layer names in the `Layer (type)` column. The number of output variables from each layer in `Output Shape`. And the number of parameters that will be estimated in `Param #`. The Linear layer has 3 parameters $\beta_0, \beta_1, \beta_2$. 
+
+```{r}
+input <- layer_input(shape = 2, name = "Input")
+linear_layer <- layer_dense(input, units = 1, name = "Linear", kernel_initializer = initializer_constant(1.0))
+model_one <- keras_model(input, linear_layer)
+model_one
+```
+
+## Generate simple data
+
+Let's use just two variables with 4 observations. Where the endogenous variable $y$ is created by the regression equation with $\beta_0 = 0, \beta_1 = 1, \beta_2 = 0.5$
+
+```{r}
+beta_0 = 0
+beta_1 = 1
+beta_2 = 0.5
+
+df <- data.frame(
+        x1 = c(1,2,3,4),
+        x2 = c(4,8,10,6)
+      )
+
+df <- df %>% mutate(y = beta_0 + beta_1 * x1 + beta_2 * x2)
+x = as.matrix(df[,1:2]) # collect these into a matrix object for later
+y = as.matrix(df[,3])   # collect these into a matrix object for later
+df
+```
+
+In the following step we add the optimizer function, loss function, and metric. To mirror OLS we use the `mean-squared-error` loss function. The optimizer . And the metric is not used in the estimation procedure, it will simply print out this value if we want to see how the model performs in regards to a metric besides the given loss function. 
+
+- `compile`: appends the optimezer, loss, and metric into the model object
+- `optimizer`: Determines how the parameters are updated. The math of this is beyond this tutorial, but in short, we can think of the `RMSprop` optimizer using the derivative of the loss function to update parameters  in a very similar way as Newton–Raphson or any other numerical optimization method. 
+
+```{r}
+model_one %>% 
+    compile(
+      optimizer = optimizer_rmsprop(lr = 0.01), # adam or adagrad
+      loss = "mean_squared_error", # New_Loss
+      metrics = "mean_squared_error"
+    )
+```
+
+The next step runs the estimation procedure. For clarity we will run this with just one epoch now.
+
+- `fit`: A function in keras that runs the estimation, updating the model object with the new estimated values
+- `epoch`: An epoch is the number of times the neural network goes through and updates parameters in the model
+- `validation_split`: This tells the model how much of the data will be split into training and validation. With validation_split = 0, there is no validation set.
+- `verbose`: An option to display the estimation procedure while it is running
+- `shuffle`: An option controlling whether the training dataset will be shuffled around. Since we want to keep the same order, we set this as FALSE
+
+```{r}
+model_one %>% 
+    fit(
+      x = x, y = y,
+      epochs = 1,
+      validation_split = 0,
+      verbose = 2,
+      shuffle = FALSE
+    )
+```
+
+Let's see if we estimated the betas we generated the data with
+
+- `keras_model`: Pulls out the layer from a model object depending on the layer name given in `get_layer`
+- `$weights`: Calls the parameters in this layer
+
+As we can see from the output. The model estimated  $\beta_0 = -0.03$, and $\beta_1 = \beta_2 = 0.9683$. This is understandable as the coefficients started at 1 and they were only updated once.
+
+```{r}
+layer_name <- 'Linear'
+intermediate_layer_model <- keras_model(inputs = model_one$input,
+                                        outputs = get_layer(model_one, layer_name)$output)
+intermediate_layer_model$weights
+
+```
+
+Now let us run this 100 times and we see the multiplying parameters converged to the original DGP! 
+
+$\beta_0 = -0.2119, \beta_1 = 0.9509, \beta_2 = 0.5453$
+
+
+```{r}
+model_one %>% 
+    fit(
+      x = x, y = y,
+      epochs = 100,
+      validation_split = 0,
+      verbose = 2,
+      shuffle = FALSE
+    )
+
+layer_name <- 'Linear'
+intermediate_layer_model <- keras_model(inputs = model_one$input,
+                                        outputs = get_layer(model_one, layer_name)$output)
+intermediate_layer_model$weights
+
+```
+
+
+# Generate a portfolio from returns
+
+Let's follow the example in the paper *A neural network for ESG portfolio construction* in forming a portfolio selecting 3 out of 5 stocks. To keep this simple suppose we have only 10 days of data
+
+## Generate some return data
+
+```{r}
+df <- data.frame(
+        Date = paste0("2021-01-", 1:10),
+        Stock_1 = rnorm(10),
+        Stock_2 = rnorm(10),
+        Stock_3 = rnorm(10),
+        Stock_4 = rnorm(10),
+        Stock_5 = rnorm(10)
+      )
+x = as.matrix(df[,2:6]) # collect these into a matrix object for later
+y = as.matrix(df[,1]) # y is not used in the loss function, so place in anything
+N <- dim(x)[2] # save the dimensions for later
+df
+```
+
+
+## A Portfolio constructing neural network design
+
+- `input (layer_input)`: The same as before, tells it how many variables to expect
+- `Relu (layer_dense)`: Constructs a node as before, however we turn this linear model into a generalized linear model by adding a *ReLu* transformation to the output. We initialize the values to be randomly generated uniform between -1 and 1. 
+- `Sweights (layer_dense)`: Constructs a node and uses the softmax (same as a logistic function) transformation to map the sum of the outputs of the 5 variables to sum to 1. 
+- `Portfolio_Layer (layer_portfolio)`: A user defined layer that will set the lowest values from `Sweights` to zero, effectively removing them from the final portfolio. If you would like to see the inner workings of it, see the `layer_portfolio` function in `NN_Portfolio.R`
+- `Multiply (layer_multiply)`: This layer multiplies the input stock returns with the weights from the preceeding `Portfolio_Layer` giving weighted portfolio returnss
+- `Sum (layer_dense)`: Adds the preceeding variables together by collecting them into 1 node. We set the parameters in this layer to 1 and turn off any updating of them so that we are doing just a simple summation. This collects our weighted returns into a portfolio
+
+```{r}
+input <- layer_input(shape = N, name = "Input") 
+
+Sweights <- layer_dense(input, units = N, activation = "softmax", name = "Sweights", kernel_initializer = initializer_random_uniform(minval = 0, maxval = 1, seed = 1)) 
+
+Portfolio_Layer <- layer_portfolio(Sweights, output_dim = portfolio_size, name = "Pweights")
+
+Multiply <- layer_multiply(list(input, Portfolio_Layer), name = "Multiply")
+
+Sum <- layer_dense(Multiply, units = 1, name = "Sum", use_bias = FALSE, kernel_initializer = initializer_constant(1.0), trainable = FALSE)
+
+model_two <- keras_model(input, Sum)
+summary(model_two)
+```
+
+## Estimate the neural network
+
+```{r}
+model_two %>% 
+  compile(
+    optimizer = optimizer_rmsprop(lr = 0.001), # adam or adagrad
+    loss = Sharpe_Loss, # New_Loss
+    metrics = Sharpe_Metric
+  )
+
+model_two %>% 
+  fit(
+    x = x, y = y,
+    epochs = 100,
+    validation_split = 0,
+    verbose = 2,
+    shuffle = FALSE
+  )
+```
+
+## A peak inside the black box
+
+Neural networks are often called black boxes because there are so many moving parts its hard to take a grasp of it. So in this section we will look at the output of each layer to take a peek inside.
+
+Just as we looked at the estimated parameters in the linear regression neural network we will pull out the intermediate layers using `keras_model`. However, rather than looking at the estimated parameters we will look at the output for each of the layers. This is done by passing through the input data into `predict` function with the estimated model.
+
+### The `Sweights` layer
+
+For each node $i$, this layer uses the stock returns $\{x_1,x_2,x_3,x_4,x_5\}$ and performs the regression:
+
+$$
+y_i = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + \beta_3 x_3 + \beta_4 x_4 + \beta_5 x_5 + \varepsilon
+$$
+
+Then the softmax (logistic) function is applied to the set of $y$ values to map them to a positive value between 0 and 1. The first four observations are printed out below. 
+
+```{r}
+layer_name <- 'Sweights'
+intermediate_layer_model <- keras_model(inputs = model_two$input,
+                                        outputs = get_layer(model_two, layer_name)$output)
+intermediate_output <- predict(intermediate_layer_model, x)
+head(intermediate_output,4)
+```
+
+### The `Pweights` layer
+
+Looking at the first day, since the first stock and fourth stock have the lowest value, these two will be set to zero. In the second day the fourth stock and fifth stock have the lowest value so they will be set to zero.
+
+```{r}
+layer_name <- 'Pweights'
+intermediate_layer_model <- keras_model(inputs = model_two$input,
+                                        outputs = get_layer(model_two, layer_name)$output)
+intermediate_output <- predict(intermediate_layer_model, x)
+head(intermediate_output,4)
+```
+
+### The `Multiply` layer
+
+This layer sums the weighted stock in the preceeding layer together. To check this, let's look at the first day and second stock. Since the weight is $0.1484348$ and the returns for that day was $2.40161776$, then the product is: $0.1484348 * 2.40161776 = 0.3564837$
+
+```{r}
+layer_name <- 'Multiply'
+intermediate_layer_model <- keras_model(inputs = model_two$input,
+                                        outputs = get_layer(model_two, layer_name)$output)
+intermediate_output <- predict(intermediate_layer_model, x)
+head(intermediate_output,4)
+```
+
+### The `Sum` layer
+
+This layer sums the weighted stock returns together for each day. To check this, again let us look at the first day. 
+
+$$
+0.0 + 0.35648364 + 0.226376683 + 0.0000000 - 0.2037127 = 0.3791476
+$$
+
+```{r}
+layer_name <- 'Sum'
+intermediate_layer_model <- keras_model(inputs = model_two$input,
+                                        outputs = get_layer(model_two, layer_name)$output)
+intermediate_output <- predict(intermediate_layer_model, x)
+head(intermediate_output,4)
+```
+
+## Conclusion
+
+I hope peeking into the outputs from each layer has helped demystify the black box that is the neural network! 
