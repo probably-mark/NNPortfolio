@@ -2,9 +2,9 @@
 
 ## Overview
 
-This package contains code for reproducing the NN-Top-30 portfolio in "A neural network for ESG portfolio construction" by Kong, McAvoy, and McAvoy. The text is available at: *link* 
+This package contains code for reproducing the neural network formed portfolio in "A neural network for ESG portfolio construction" by Kong, McAvoy, and McAvoy. The text is available at: *link* 
 
-The tutorial that we will follow in this document can be found in `R/Tutorial.Rmd` and the script and functions for reproducing the portfolio at `R/NN_Portfolio.R`.
+This tutorial's main purpose is to extend the appendix by providing examples with code. that we will follow in this document can be found in `R/Tutorial.Rmd` and the script and functions for reproducing the portfolio at `R/NN_Portfolio.R`.
 
 ## Authors
 
