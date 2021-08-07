@@ -186,6 +186,7 @@ summary {
 </div>
 
 
+<p>In this tutorial we will cover two things. First, we will look at a how neural network estimates parameters by considering a one layer one node network that mirros a linear regression. Second, we will walk through an example of portfolio construction with stock returns following “A neural network for ESG portfolio construction” by Kong, McAvoy, and McAvoy.</p>
 <div id="package-dependencies" class="section level2">
 <h2>Package Dependencies</h2>
 <pre class="r"><code>library(tidyverse)
@@ -442,7 +443,7 @@ head(intermediate_output,4)</code></pre>
 </div>
 <div id="the-multiply-layer" class="section level3">
 <h3>The <code>Multiply</code> layer</h3>
-<p>This layer sums the weighted stock in the preceeding layer together. To check this, let’s look at the first day and second stock. Since the weight is <span class="math inline">\(0.1484348\)</span> and the returns for that day was <span class="math inline">\(2.40161776\)</span>, then the product is: <span class="math inline">\(0.1484348 * 2.40161776 = 0.3564837\)</span></p>
+<p>This layer sums the weighted stock in the preceeding layer together. To check this, let’s look at the first day and second stock. Since the weight is <span class="math inline">\(0.09831871\)</span> and the returns for that day was <span class="math inline">\(1.51178117\)</span>, then the product is: <span class="math inline">\(0.09831871 * 1.51178117 = 0.1486364\)</span></p>
 <pre class="r"><code>layer_name &lt;- &#39;Multiply&#39;
 intermediate_layer_model &lt;- keras_model(inputs = model_two$input,
                                         outputs = get_layer(model_two, layer_name)$output)
@@ -458,7 +459,7 @@ head(intermediate_output,4)</code></pre>
 <h3>The <code>Sum</code> layer</h3>
 <p>This layer sums the weighted stock returns together for each day. To check this, again let us look at the first day.</p>
 <p><span class="math display">\[
-0.0 + 0.35648364 + 0.226376683 + 0.0000000 - 0.2037127 = 0.3791476
+0.0 + 0.148636386 + 0.2993657 + 0.0 - 0.09475271 = 0.3532494
 \]</span></p>
 <pre class="r"><code>layer_name &lt;- &#39;Sum&#39;
 intermediate_layer_model &lt;- keras_model(inputs = model_two$input,
