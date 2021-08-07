@@ -251,7 +251,7 @@ head(intermediate_output,4)
 
 ### The `Multiply` layer
 
-This layer sums the weighted stock in the preceeding layer together. To check this, let's look at the first day and second stock. Since the weight is $0.1484348$ and the returns for that day was $2.40161776$, then the product is: $0.1484348 * 2.40161776 = 0.3564837$
+This layer sums the weighted stock in the preceeding layer together. To check this, let's look at the first day and second stock. Since the weight is $0.1484348$ and the returns for that day was $1.51178117$, then the product is: $0.09831871  * 1.51178117  = 0.1486364$
 
 ```{r}
 layer_name <- 'Multiply'
@@ -266,7 +266,7 @@ head(intermediate_output,4)
 This layer sums the weighted stock returns together for each day. To check this, again let us look at the first day. 
 
 $$
-0.0 + 0.35648364 + 0.226376683 + 0.0000000 - 0.2037127 = 0.3791476
+0.0 + 0.148636386 + 0.2993657 + 0.0 - 0.09475271 = 0.3532494
 $$
 
 ```{r}
