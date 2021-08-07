@@ -6,6 +6,8 @@ This package contains code for reproducing the neural network formed portfolio i
 
 This tutorial's main purpose is to extend the appendix by providing examples with code. that we will follow in this document can be found in `R/Tutorial.Rmd` and the script and functions for reproducing the portfolio at `R/NN_Portfolio.R`.
 
+You may download this as a zip folder and run the code yourself line by line in the `Tutorial.Rmd` file or view the tutorial by opening the `Tutorial.html` file in any browser.
+
 ## Authors
 
 Lingyi Kong, City University of New York, Baruch College, Zicklin School of Business, New York, NY.
