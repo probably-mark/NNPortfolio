@@ -1,0 +1,9 @@
+name: nn_env
+channels:
+  - conda-forge  # Add conda-forge as a channel
+  - defaults
+dependencies:
+  - mamba
+  - python=3.10
+  - tensorflow
+  - keras

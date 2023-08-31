@@ -12,20 +12,21 @@ In this tutorial we will cover two things. First, we will look at a how neural n
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(keras)
-library(tfdatasets)
+# library(tfdatasets)
 tensorflow::tf_config()
+library(tensorflow)
 
 portfolio_size = 3; gamma = 2; validation_percent = 0; epochs = 5;
 set.seed(1)
 
-source('NN_Portfolio.R')
+source('R-code/NN_Portfolio.R')
 
 ```
 
 ```{r, eval = FALSE}
 library(tidyverse)
 library(keras)
-library(tfdatasets)
+# library(tfdatasets)
 tensorflow::tf_config()
 
 set.seed(1)
@@ -84,7 +85,7 @@ In the following step we add the optimizer function, loss function, and metric. 
 ```{r}
 model_one %>% 
     compile(
-      optimizer = optimizer_rmsprop(lr = 0.01), # adam or adagrad
+      optimizer = optimizer_rmsprop(learning_rate = 0.01), # adam or adagrad
       loss = "mean_squared_error", # New_Loss
       metrics = "mean_squared_error"
     )
@@ -146,6 +147,12 @@ intermediate_layer_model$weights
 
 ```
 
+### Compare to OLS
+
+```{r}
+m <- lm(y ~ x1 + x2, df)
+m
+```
 
 # Generate a portfolio from returns
 
@@ -179,13 +186,13 @@ df
 - `Sum (layer_dense)`: Adds the preceeding variables together by collecting them into 1 node. We set the parameters in this layer to 1 and turn off any updating of them so that we are doing just a simple summation. This collects our weighted returns into a portfolio
 
 ```{r}
-input <- layer_input(shape = N, name = "Input") 
+input <- layer_input(shape = c(N), name = "Input")
 
 Sweights <- layer_dense(input, units = N, activation = "softmax", name = "Sweights", kernel_initializer = initializer_random_uniform(minval = 0, maxval = 1, seed = 1)) 
 
-Portfolio_Layer <- layer_portfolio(Sweights, output_dim = portfolio_size, name = "Pweights")
+PortfolioLayer <- layer_portfolio(Sweights, output_dim = portfolio_size, name = "Pweights")
 
-Multiply <- layer_multiply(list(input, Portfolio_Layer), name = "Multiply")
+Multiply <- layer_multiply(c(input, PortfolioLayer), name = "Multiply")
 
 Sum <- layer_dense(Multiply, units = 1, name = "Sum", use_bias = FALSE, kernel_initializer = initializer_constant(1.0), trainable = FALSE)
 
