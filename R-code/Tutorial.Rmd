@@ -85,8 +85,8 @@ In the following step we add the optimizer function, loss function, and metric. 
 ```{r}
 model_one %>% 
     compile(
-      optimizer = optimizer_rmsprop(learning_rate = 0.01), # adam or adagrad
-      loss = "mean_squared_error", # New_Loss
+      optimizer = optimizer_rmsprop(learning_rate = 0.01), # stands for Root Mean Square Propagation
+      loss = "mean_squared_error", # Use MSE to match linear regression
       metrics = "mean_squared_error"
     )
 ```
