@@ -11,7 +11,7 @@ You may download this as a zip folder and run the code yourself line by line in 
 ## Authors
 
 Lingyi Kong, City University of New York, Baruch College, Zicklin School of Business, New York, NY.
-e-mail: lingyi.kong@baruch.cuny.edu,
+e-mail: Lingyi.Kong353@gmail.com,
 
 Mark McAvoy, Brandeis University, International Business School, Waltham, MA.
 Corresponding Author
